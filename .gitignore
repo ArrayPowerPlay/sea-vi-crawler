@@ -1,0 +1,11 @@
+# Bí mật: token Hugging Face
+.env
+# Dữ liệu tải về (rất lớn)
+data/
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+# Log chạy nền
+*.out

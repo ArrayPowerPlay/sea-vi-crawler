@@ -1,0 +1,6 @@
+# Thư viện cần cho sea-vi-crawler
+huggingface_hub>=1.0
+python-dotenv>=1.0
+tqdm>=4.66
+# chỉ cần khi chạy test
+pytest>=8.0
