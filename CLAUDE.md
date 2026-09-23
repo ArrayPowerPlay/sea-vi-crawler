@@ -15,15 +15,16 @@ Downloads **only the Vietnamese partition** of three AI Singapore datasets from 
 ## Commands
 
 ```bash
-uv venv .venv && uv pip install --python .venv/bin/python -r requirements.txt pyarrow   # local dev env (pyarrow only for inspecting parquet)
-.venv/bin/python -m pytest                                        # all tests (no network)
-.venv/bin/python -m pytest tests/test_checkpoint.py::test_is_done_checks_size_and_sha   # single test
+uv sync                                   # install deps from uv.lock (dev group: pytest, pyarrow for inspecting parquet)
+uv run pytest                             # all tests (no network)
+uv run pytest tests/test_checkpoint.py::test_is_done_checks_size_and_sha   # single test
+uv add <pkg> / uv add --dev <pkg>         # add a dependency; commit pyproject.toml + uv.lock together
 
 # real end-to-end smoke test (needs HF_TOKEN in .env); keep test data out of the repo
-.venv/bin/python scripts/download_sea_instruct_2602.py --data-root <scratch>/data --limit-files 1 --verify-sha256
-.venv/bin/python scripts/download_all.py --data-root <scratch>/data --status
+uv run python scripts/download_sea_instruct_2602.py --data-root <scratch>/data --limit-files 1 --verify-sha256
+uv run python scripts/download_all.py --data-root <scratch>/data --status
 ```
-All four scripts share the flags `--data-root` (default: env `SEA_DATA_ROOT`, otherwise `./data`), `--workers` (8), `--limit-files`, `--verify-sha256`, `--max-retries` (5), and `--status`. `pytest.ini` sets `pythonpath = .`. The scripts add the repo root to `sys.path` themselves.
+All four scripts share the flags `--data-root` (default: env `SEA_DATA_ROOT`, otherwise `./data`), `--workers` (8), `--limit-files`, `--verify-sha256`, `--max-retries` (5), and `--status`. Dependencies are managed with uv only (`pyproject.toml` + `uv.lock`); there is no requirements.txt. The project is not an installable package: pytest gets `pythonpath = .` from `[tool.pytest.ini_options]`. The scripts add the repo root to `sys.path` themselves.
 
 ## Architecture
 

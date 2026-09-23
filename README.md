@@ -18,7 +18,11 @@ Có **checkpoint**: nếu bị crash, mất mạng hoặc máy khởi động l�
 ## 1. Chuẩn bị (làm một lần)
 
 ### 1.1. Yêu cầu
-- Python ≥ 3.10, chạy trên Linux (máy chủ Jupyter Lab).
+- Linux (máy chủ Jupyter Lab) và [uv](https://docs.astral.sh/uv/) để cài thư viện. uv tự lo Python ≥ 3.10 nếu máy chưa có.
+  Nếu máy chủ chưa có uv:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh     # hoặc: pip install uv
+  ```
 - Ổ đĩa trống **≥ 260 GB** cho cả 3 bộ (242 GB dữ liệu + chỗ cho file đang tải dở).
 - Tài khoản Hugging Face **đã được duyệt quyền** vào `aisingapore/SEA-Instruct-2602`:
   mở trang dataset, bấm đồng ý điều khoản.
@@ -28,8 +32,10 @@ Mở **Terminal** trong Jupyter Lab (File → New → Terminal):
 ```bash
 git clone https://github.com/ArrayPowerPlay/sea-vi-crawler.git
 cd sea-vi-crawler
-pip install -r requirements.txt
+uv sync --no-dev     # tạo .venv và cài đúng phiên bản thư viện ghi trong uv.lock
 ```
+- `uv sync --no-dev` chỉ cài thư viện cần để tải. Bỏ `--no-dev` nếu muốn chạy test.
+- Mọi lệnh bên dưới đều chạy qua `uv run ...`, nên không cần tự kích hoạt `.venv`.
 
 ### 1.3. Khai báo token Hugging Face
 ```bash
@@ -73,8 +79,8 @@ Cả 4 script dùng **chung một bộ tham số**.
 
 ### 2.3. Chạy thử trước (khuyên làm)
 ```bash
-python scripts/download_sea_instruct_2602.py --data-root /duong/dan/data --limit-files 1 --verify-sha256
-python scripts/download_sea_instruct_2602.py --data-root /duong/dan/data --status
+uv run python scripts/download_sea_instruct_2602.py --data-root /duong/dan/data --limit-files 1 --verify-sha256
+uv run python scripts/download_sea_instruct_2602.py --data-root /duong/dan/data --status
 ```
 Nếu thấy `Xong 1/1 file` là token và mạng đều ổn.
 
@@ -83,7 +89,7 @@ Nếu thấy `Xong 1/1 file` là token và mạng đều ổn.
 
 ```bash
 cd sea-vi-crawler
-nohup python scripts/download_all.py --data-root /duong/dan/data --workers 8 --verify-sha256 \
+nohup uv run python scripts/download_all.py --data-root /duong/dan/data --workers 8 --verify-sha256 \
       > download_all.out 2>&1 &
 ```
 - Sau lệnh này có thể đóng tab, tắt máy tính cá nhân; máy chủ vẫn tiếp tục tải.
@@ -92,7 +98,7 @@ nohup python scripts/download_all.py --data-root /duong/dan/data --workers 8 --v
 Cách khác là dùng `tmux`, nếu máy chủ có sẵn:
 ```bash
 tmux new -s sea
-python scripts/download_all.py --data-root /duong/dan/data --workers 8
+uv run python scripts/download_all.py --data-root /duong/dan/data --workers 8
 # Ctrl+B rồi D để thoát ra, tiến trình vẫn chạy. Quay lại: tmux attach -t sea
 ```
 
@@ -100,14 +106,14 @@ Nếu buộc phải chạy từ notebook, dùng ô sau. Nó khởi động tiế
 ```python
 import subprocess
 subprocess.Popen(
-    "nohup python scripts/download_all.py --data-root /duong/dan/data --workers 8 > download_all.out 2>&1 &",
+    "nohup uv run python scripts/download_all.py --data-root /duong/dan/data --workers 8 > download_all.out 2>&1 &",
     shell=True, cwd="/duong/dan/sea-vi-crawler",
 )
 ```
 
 ### 2.5. Theo dõi
 ```bash
-python scripts/download_all.py --data-root /duong/dan/data --status   # tiến độ từng bộ
+uv run python scripts/download_all.py --data-root /duong/dan/data --status   # tiến độ từng bộ
 tail -f download_all.out                                              # log trực tiếp (Ctrl+C để thoát xem)
 ls /duong/dan/data/logs/                                              # log chi tiết từng lần chạy
 ```
@@ -168,7 +174,7 @@ Mỗi `raw/<bộ>/` còn có thư mục ẩn `.cache/huggingface/` do thư việ
 
 ### Đọc dữ liệu đã tải
 ```python
-from datasets import load_dataset   # pip install datasets
+from datasets import load_dataset   # cần thêm thư viện: uv add datasets
 
 pile_v2 = load_dataset("parquet", data_files="/duong/dan/data/raw/sea_pile_v2/vi/*.parquet",
                        split="train", streaming=True)
@@ -218,7 +224,8 @@ sea_crawl/
 ├── downloader.py  # vòng tải song song, khoá chống chạy trùng, dọn file dở, --status
 └── cli.py         # tham số dòng lệnh dùng chung
 scripts/           # 4 script chạy
-tests/             # test (không cần mạng): python -m pytest
+tests/             # test (không cần mạng): uv run pytest
+pyproject.toml     # khai báo thư viện; uv.lock ghi phiên bản chính xác (commit cả hai)
 ```
 Muốn thêm một bộ dữ liệu mới: thêm một `DatasetSpec` vào `sea_crawl/datasets.py`, rồi tạo script mới theo mẫu của một script có sẵn.
 
